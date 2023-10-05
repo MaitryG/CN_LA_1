@@ -1,7 +1,7 @@
 import socket
 from urllib.parse import urlparse
 import argparse
-class SimpleHTTPClient:
+class ConcordiaHTTP:
     def __init__(self, url):
         parsed_url = urlparse(url)
         self.host = parsed_url.hostname
@@ -47,26 +47,48 @@ class SimpleHTTPClient:
         client_socket.close()
         return response
 
-# Example usage:
-parser = argparse.ArgumentParser()
-parser.add_argument("get", help="get method")
-# parser.add_argument("post", help="post method")
-parser.add_argument("-v", help="verbose option")
-parser.add_argument()
-args = parser.parse_args()
-print(args)
-client = SimpleHTTPClient("http://httpbin.org/post")
-client.set_method("POST")
-client.add_header("User-Agent", "SimpleHTTPClient")
-client.set_body('{"assignment" : 1}')
-response = client.send_request()	
-print("Response from server:")
-print(response)
+if __name__ == "__main__":
+    parser1_get = argparse.ArgumentParser(prog="httpc", description="httpc is a curl-like application but supports HTTP protocol only.", epilog="Use \"httpc help [command]\" for more information about a command.")
+    parser1_get.add_argument("get", help="executes a HTTP GET request and prints the response.", default=str)
+    parser1_get.add_argument("url", help="destination url", default=str)
+    # parser.add_argument("post", help="executes a HTTP POST request and prints the response.")
+    parser1_get.add_argument("--verbose", "-v" , help="verbose option", action="store_true")
+    # parser1_get.add_argument("-h", "--headers", nargs='+', help="Additional headers in the format 'key:value'")
+    args = parser1_get.parse_args()
 
 
-# # Usage: python echoclient.py --host host --port port
-# parser = argparse.ArgumentParser()
-# parser.add_argument("--host", help="server host", default="localhost")
-# parser.add_argument("--port", help="server port", type=int, default=8007)
-# args = parser.parse_args()
-# run_client(args.host, args.port)
+    #if arg=='GET'
+    #Get method
+    client = ConcordiaHTTP('http://httpbin.org/get?course=networking&assignment=1')
+    client.set_method("GET")
+    client.add_header("User-Agent", "ConcordiaHTTP")
+    # client = ConcordiaHTTP()
+    # client.set_method(args.get)
+    # client.add_header("User-Agent", "ConcordiaHTTP")
+
+    #if arg=='POST'
+    #Post method
+    #client = ConcordiaHTTP("http://httpbin.org/post")
+    #client.set_method("POST")
+    # #client.add_header("User-Agent", "ConcordiaHTTP")
+    # #client.set_body('{"assignment" : 1}')
+
+    # u1 = urlparse((str(args.url))[1:-1])
+    # print(u1)
+    # print(u1.hostname)
+    #
+    # u2 = urlparse('http://httpbin.org/get?course=networking&assignment=1')
+    # print(u2)
+    # print(u2.hostname, u2.port)
+
+
+    response = client.send_request()
+    print("Response from server:")
+    print(response)
+
+            # Usage: python echoclient.py --host host --port port
+            # parser = argparse.ArgumentParser()
+            # parser.add_argument("--host", help="server host", default="localhost")
+            # parser.add_argument("--port", help="server port", type=int, default=8007)
+            # args = parser.parse_args()
+            # run_client(args.host, args.port)httpbin.org/get
