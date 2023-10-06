@@ -1,6 +1,7 @@
 import socket
 from urllib.parse import urlparse
 import argparse
+import re
 class ConcordiaHTTP:
     def __init__(self, url):
         parsed_url = urlparse(url)
@@ -48,30 +49,50 @@ class ConcordiaHTTP:
         return response
 
 if __name__ == "__main__":
-    parser1_get = argparse.ArgumentParser(prog="httpc", description="httpc is a curl-like application but supports HTTP protocol only.", epilog="Use \"httpc help [command]\" for more information about a command.")
-    parser1_get.add_argument("get", help="executes a HTTP GET request and prints the response.", default=str)
-    parser1_get.add_argument("url", help="destination url", default=str)
-    # parser.add_argument("post", help="executes a HTTP POST request and prints the response.")
-    parser1_get.add_argument("--verbose", "-v" , help="verbose option", action="store_true")
-    # parser1_get.add_argument("-h", "--headers", nargs='+', help="Additional headers in the format 'key:value'")
-    args = parser1_get.parse_args()
 
+    def validate_header(header):
+        pattern = r"^(.+?):\s*(.+)$"
+        if re.match(pattern, header):
+            return header
+        raise argparse.ArgumentTypeError("Invalid header format. Please use 'key:value'.")
 
-    #Get method
+    main_parser = argparse.ArgumentParser(prog="httpc", description="httpc is a curl-like application but supports HTTP protocol only.", epilog="Use \"httpc help [command]\" for more information about a command.")
+    subparsers = main_parser.add_subparsers(dest="command")
+
+    parser1_get = subparsers.add_parser("get", help="executes a HTTP GET request and prints the response.")
+    parser1_get.add_argument("--verbose", "-v" , help="Prints the detail of the response such as protocol, status, and headers", action="store_true")
+    parser1_get.add_argument("--headers", nargs='+', help="Additional headers in the format 'key:value'")
+
+    parser2_post = subparsers.add_parser("post", help="Post executes a HTTP POST request for a given URL with inline data or from file.")
+    parser2_post.add_argument("--verbose", "-v", help="Prints the detail of the response such as protocol, status, and headers", action="store_true")
+    parser2_post.add_argument("--headers", metavar="header", type=validate_header, nargs="+", help="Headers in 'key:value' format")
+    parser2_post.add_argument("-d", help="Associates an inline data to the body HTTP POST request.", action="store_true")
+    parser2_post.add_argument("-f", help="Associates the content of a file to the body HTTP POST request.", action="store_true")
+
+    main_parser.add_argument("url", help="URL determines the targeted HTTP server.")
+    args = main_parser.parse_args()
+    print(args)
+
     if(args.url[0] == '\''):
         client = ConcordiaHTTP(str(args.url).replace('\'', ''))
     else:
         client = ConcordiaHTTP(str(args.url))
-    client.set_method(str(args.get).upper())
-    client.add_header("User-Agent", "ConcordiaHTTP")
 
-    response = client.send_request()
-    print("Response from server:")
-    print(response)
 
-    #if arg=='POST'
-    #Post method
-    #client = ConcordiaHTTP("http://httpbin.org/post")
-    #client.set_method("POST")
-    # #client.add_header("User-Agent", "ConcordiaHTTP")
-    # #client.set_body('{"assignment" : 1}')
+    #Get method
+    if(args.command=='get'):
+        client.set_method("GET")
+        client.add_header("User-Agent", "ConcordiaHTTP")
+        response = client.send_request()
+        print("Response from server:")
+        print(response)
+    elif args.command == 'post':
+        client.set_method("POST")
+        client.set_body('{"assignment": 1"')
+        if args.headers:
+            args_split_headers = str(args.header).split(":")
+            client.add_header(args_split_headers[0], args_split_headers[1]) #'key:value'
+
+        response = client.send_request()
+        print("Response from server")
+        print(response)
