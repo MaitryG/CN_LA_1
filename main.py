@@ -2,6 +2,7 @@ import socket
 from urllib.parse import urlparse
 import argparse
 import re
+import json
 class ConcordiaHTTP:
     def __init__(self, url):
         parsed_url = urlparse(url)
@@ -66,8 +67,8 @@ if __name__ == "__main__":
     parser2_post = subparsers.add_parser("post", help="Post executes a HTTP POST request for a given URL with inline data or from file.")
     parser2_post.add_argument("--verbose", "-v", help="Prints the detail of the response such as protocol, status, and headers", action="store_true")
     parser2_post.add_argument("--headers", metavar="header", type=validate_header, nargs="+", help="Headers in 'key:value' format")
-    parser2_post.add_argument("-d", help="Associates an inline data to the body HTTP POST request.", action="store_true")
-    parser2_post.add_argument("-f", help="Associates the content of a file to the body HTTP POST request.", action="store_true")
+    parser2_post.add_argument("--data", "-d", help="Associates an inline data to the body HTTP POST request.", nargs="+")
+    parser2_post.add_argument("--file", "-f", help="Associates the content of a file to the body HTTP POST request.")
 
     main_parser.add_argument("url", help="URL determines the targeted HTTP server.")
     args = main_parser.parse_args()
@@ -82,17 +83,38 @@ if __name__ == "__main__":
     #Get method
     if(args.command=='get'):
         client.set_method("GET")
+        if args.headers:
+            for x in args.headers:
+                args_remove_brackets = str(x).replace('\'', '')
+                args_remove_brackets = str(args_remove_brackets).replace('[','')
+                args_remove_brackets = str(args_remove_brackets).replace(']', '')
+                args_split_headers = str(args_remove_brackets).split(":")
+                client.add_header(args_split_headers[0], args_split_headers[1]) #'key:value'
+
         client.add_header("User-Agent", "ConcordiaHTTP")
         response = client.send_request()
         print("Response from server:")
         print(response)
     elif args.command == 'post':
         client.set_method("POST")
-        client.set_body('{"assignment": 1"')
-        if args.headers:
-            args_split_headers = str(args.header).split(":")
-            client.add_header(args_split_headers[0], args_split_headers[1]) #'key:value'
 
+        if args.headers:
+            for x in args.headers:
+                args_remove_brackets = str(x).replace('\'', '')
+                args_remove_brackets = str(args_remove_brackets).replace('[','')
+                args_remove_brackets = str(args_remove_brackets).replace(']', '')
+                args_split_headers = str(args_remove_brackets).split(":")
+                client.add_header(args_split_headers[0], args_split_headers[1]) #'key:value'
+        if args.data:
+            client.set_body(json.dumps(args.data))   #str(args.data).replace('\'', ''))
+        elif args.file:
+            with open(args.file, 'r') as file:
+                data = file.read()
+                client.set_body(data)
+        else:
+            print("Error: Either -d or -f should be specified. Not both.")
+
+        client.add_header("User-Agent", "ConcordiaHTTP")
         response = client.send_request()
         print("Response from server")
         print(response)
