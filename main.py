@@ -1,4 +1,5 @@
 import socket
+import sys
 from urllib.parse import urlparse
 import argparse
 import re
@@ -27,7 +28,10 @@ class ConcordiaHTTP:
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.connect((self.host, self.port))
 
-        request = f"{self.method} {self.path}?{self.query} HTTP/1.1\r\n"
+        if(self.query):
+            request = f"{self.method} {self.path}?{self.query} HTTP/1.1\r\n"
+        else:
+            request = f"{self.method} {self.path} HTTP/1.1\r\n"
         request += f"Host: {self.host}\r\n"
         for key, value in self.headers.items():
             request += f"{key}: {value}\r\n"
@@ -41,7 +45,7 @@ class ConcordiaHTTP:
 
         response = ""
         while True:
-            data = client_socket.recv(1024)
+            data = client_socket.recv(3000)
             if not data:
                 break
             response += data.decode()
@@ -57,12 +61,13 @@ if __name__ == "__main__":
             return header
         raise argparse.ArgumentTypeError("Invalid header format. Please use 'key:value'.")
 
-    main_parser = argparse.ArgumentParser(prog="httpc", description="httpc is a curl-like application but supports HTTP protocol only.", epilog="Use \"httpc help [command]\" for more information about a command.")
+    main_parser = argparse.ArgumentParser(prog="httpc", description="httpc is a curl-like application but supports HTTP protocol only.", epilog="Use \"httpc [command] --help\"  for more information about a command.")
     subparsers = main_parser.add_subparsers(dest="command")
 
     parser1_get = subparsers.add_parser("get", help="executes a HTTP GET request and prints the response.")
     parser1_get.add_argument("--verbose", "-v" , help="Prints the detail of the response such as protocol, status, and headers", action="store_true")
     parser1_get.add_argument("--headers", nargs='+', help="Additional headers in the format 'key:value'")
+    parser1_get.add_argument("--output", "-o", help="Writes the body of the response to a file instead of console")
 
     parser2_post = subparsers.add_parser("post", help="Post executes a HTTP POST request for a given URL with inline data or from file.")
     parser2_post.add_argument("--verbose", "-v", help="Prints the detail of the response such as protocol, status, and headers", action="store_true")
@@ -93,6 +98,12 @@ if __name__ == "__main__":
 
         client.add_header("User-Agent", "ConcordiaHTTP")
         response = client.send_request()
+        if args.output:
+            with open(args.output, 'w') as file:
+                # Write content to the file
+                file.write(response)
+            sys.exit()
+
         print("Response from server:")
         print(response)
     elif args.command == 'post':
@@ -115,6 +126,8 @@ if __name__ == "__main__":
             print("Error: Either -d or -f should be specified. Not both.")
 
         client.add_header("User-Agent", "ConcordiaHTTP")
+
+
         response = client.send_request()
         print("Response from server")
         print(response)

@@ -1,0 +1,1 @@
+This is file.txt file and you are getting file data.
